@@ -71,9 +71,7 @@ def run_app(cfg: DictConfig) -> None:
             np.save(os.path.join(cfg.out_cam, img_name + '.npy'), cam_dict)
 
         if cfg.out_cam_pred is not None:
-            bg_score = [np.ones_like(norm_cam[0]) * 0.2]
-            pred = np.argmax(np.concatenate((bg_score, norm_cam)), 0)
-            imsave(os.path.join(cfg.out_cam_pred, img_name + '.png'), (pred * 255).astype(np.uint8),
+            imsave(os.path.join(cfg.out_cam_pred, img_name + '.png'), (norm_cam * 255).astype(np.uint8),
                    check_contrast=False)
 
         def _crf_with_alpha(cam_dict, alpha):
