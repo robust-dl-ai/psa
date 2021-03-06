@@ -38,8 +38,13 @@ if __name__ == '__main__':
     os.makedirs(args.out_la_crf, exist_ok=True)
     os.makedirs(args.out_ha_crf, exist_ok=True)
     os.makedirs(args.out_cam_pred, exist_ok=True)
-
-    model = getattr(importlib.import_module(args.network), 'Net')()
+    if args.network == "psa.network.resnet38_cls_wildcat":
+        model = getattr(importlib.import_module(args.network), 'Net')(kmax=1,
+                                                                      kmin=1,
+                                                                      alpha=0.7,
+                                                                      num_maps=4)
+    else:
+        model = getattr(importlib.import_module(args.network), 'Net')()
     if is_cuda_available:
         model.load_state_dict(torch.load(args.weights))
     else:

@@ -20,6 +20,8 @@ def run_app(cfg: DictConfig) -> None:
     os.makedirs(cfg.out_cam, exist_ok=True)
     os.makedirs(cfg.out_la_crf, exist_ok=True)
     os.makedirs(cfg.out_ha_crf, exist_ok=True)
+    os.makedirs(cfg.out_la_crf_pred, exist_ok=True)
+    os.makedirs(cfg.out_ha_crf_pred, exist_ok=True)
     os.makedirs(cfg.out_cam_pred, exist_ok=True)
 
     model = getattr(importlib.import_module(cfg.network), 'Net')()
@@ -71,7 +73,8 @@ def run_app(cfg: DictConfig) -> None:
         if cfg.out_cam_pred is not None:
             bg_score = [np.ones_like(norm_cam[0]) * 0.2]
             pred = np.argmax(np.concatenate((bg_score, norm_cam)), 0)
-            imsave(os.path.join(cfg.out_cam_pred, img_name + '.png'), pred.astype(np.uint8), check_contrast=False)
+            imsave(os.path.join(cfg.out_cam_pred, img_name + '.png'), (pred * 255).astype(np.uint8),
+                   check_contrast=False)
 
         def _crf_with_alpha(cam_dict, alpha):
             v = np.array(list(cam_dict.values()))
@@ -91,10 +94,18 @@ def run_app(cfg: DictConfig) -> None:
             crf_la = _crf_with_alpha(cam_dict, cfg.low_alpha)
             np.save(os.path.join(cfg.out_la_crf, img_name + '.npy'), crf_la)
 
+            if cfg.out_la_crf_pred is not None:
+                for i, item, in crf_la.items():
+                    imsave(os.path.join(cfg.out_la_crf_pred, img_name + f'_{i}.png'), (item * 255).astype(np.uint8),
+                           check_contrast=False)
+
         if cfg.out_ha_crf is not None:
             crf_ha = _crf_with_alpha(cam_dict, cfg.high_alpha)
             np.save(os.path.join(cfg.out_ha_crf, img_name + '.npy'), crf_ha)
-
+            if cfg.out_ha_crf_pred is not None:
+                for i, item, in crf_ha.items():
+                    imsave(os.path.join(cfg.out_ha_crf_pred, img_name + f'_{i}.png'), (item * 255).astype(np.uint8),
+                           check_contrast=False)
         print(iter)
 
 
