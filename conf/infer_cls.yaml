@@ -7,6 +7,8 @@ out_cam: ${hydra:runtime.cwd}/debug_outpus/psa/results/dev/cam/
 out_cam_pred: ${hydra:runtime.cwd}/debug_outpus/psa/results/dev/cam_pred/
 out_la_crf: ${hydra:runtime.cwd}/debug_outpus/psa/results/dev/la_crf/
 out_ha_crf: ${hydra:runtime.cwd}/debug_outpus/psa/results/dev/ha_crf/
+out_la_crf_pred: ${hydra:runtime.cwd}/debug_outpus/psa/results/dev/la_crf_pred/
+out_ha_crf_pred: ${hydra:runtime.cwd}/debug_outpus/psa/results/dev/ha_crf_pred/
 num_workers: 4
 low_alpha: 4
 high_alpha: 32
