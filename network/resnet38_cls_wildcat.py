@@ -35,10 +35,8 @@ class Net(resnet38d.Net):
 
     def forward_cam(self, x):
         x = super().forward(x)
-
+        x = self.fc8(x)
         x = self.pooling.class_wise(x)
-        x = F.conv2d(x, self.fc8.weight)
-        ## Doing this to not use bias values
         x = F.relu(x)
 
         return x

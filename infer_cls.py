@@ -75,6 +75,8 @@ if __name__ == '__main__':
         orig_img = np.asarray(Image.open(img_path))
         orig_img_size = orig_img.shape[:2]
 
+        if os.path.exists(os.path.join(args.out_cam, img_name + '.npy')):
+            continue
 
         def _work(i, img):
             with torch.no_grad():

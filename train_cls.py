@@ -1,9 +1,11 @@
 import argparse
 import importlib
+from datetime import datetime
 
 import numpy as np
 import torch
 import torch.nn.functional as F
+import wandb
 from torch.utils.data import DataLoader
 from torchvision import transforms
 
@@ -38,9 +40,11 @@ def validate(model, data_loader):
             val_loss_meter.add({'loss': loss.item()})
 
     model.train()
-
-    print('loss:', val_loss_meter.pop('loss'))
-
+    val_loss = val_loss_meter.pop('loss')
+    print('loss:', val_loss)
+    wandb.log({
+        "val_loss": val_loss
+    })
     return
 
 
@@ -60,6 +64,12 @@ if __name__ == '__main__':
     parser.add_argument("--crop_size", default=448, type=int)
     parser.add_argument("--voc12_root", required=True, type=str)
     args = parser.parse_args()
+
+    now = datetime.now()
+    date_time = now.strftime("%m/%d/%Y-%H:%M:%S")
+
+    wandb.init(project=f'psa-{args.network}-train-cls-{args.session_name}', name=date_time)
+
     if args.network == "psa.network.resnet38_cls_wildcat":
         model = getattr(importlib.import_module(args.network), 'Net')(kmax=1,
                                                                       kmin=1,
@@ -67,7 +77,7 @@ if __name__ == '__main__':
                                                                       num_maps=4)
     else:
         model = getattr(importlib.import_module(args.network), 'Net')()
-
+    wandb.watch(model)
     pyutils.Logger(args.session_name + '.log')
 
     print(vars(args))
@@ -131,7 +141,6 @@ if __name__ == '__main__':
     if is_cuda_available:
         model = torch.nn.DataParallel(model).cuda()
     model.train()
-
     avg_meter = pyutils.AverageMeter('loss')
 
     timer = pyutils.Timer("Session started: ")
@@ -158,12 +167,19 @@ if __name__ == '__main__':
 
             if (optimizer.global_step - 1) % 50 == 0:
                 timer.update_progress(optimizer.global_step / max_step)
-
+                avg_loss = avg_meter.pop('loss')
                 print('Iter:%5d/%5d' % (optimizer.global_step - 1, max_step),
-                      'Loss:%.4f' % (avg_meter.pop('loss')),
+                      'Loss:%.4f' % avg_loss,
                       'imps:%.1f' % ((iter + 1) * args.batch_size / timer.get_stage_elapsed()),
                       'Fin:%s' % (timer.str_est_finish()),
                       'lr: %.4f' % (optimizer.param_groups[0]['lr']), flush=True)
+                wandb.log({
+                    "iter": (optimizer.global_step - 1, max_step),
+                    "loss": avg_loss,
+                    "imps": (iter + 1) * args.batch_size / timer.get_stage_elapsed(),
+                    "fin": timer.str_est_finish(),
+                    "lr": optimizer.param_groups[0]['lr']
+                })
 
         else:
             validate(model, val_data_loader)

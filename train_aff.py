@@ -1,13 +1,15 @@
 import argparse
 import importlib
+from datetime import datetime
 
 import numpy as np
 import torch
+import wandb
 from torch.utils.data import DataLoader
 from torchvision import transforms
 
-from psa.voc12 import data
 from psa.tool import pyutils, imutils, torchutils
+from psa.voc12 import data
 
 is_cuda_available = torch.cuda.is_available()
 if is_cuda_available:
@@ -33,6 +35,11 @@ if __name__ == '__main__':
     parser.add_argument("--ha_crf_dir", required=True, type=str)
     args = parser.parse_args()
 
+    now = datetime.now()
+    date_time = now.strftime("%m/%d/%Y-%H:%M:%S")
+
+    wandb.init(project=f'psa-{args.network}-train-aff-{args.session_name}', name=date_time)
+
     pyutils.Logger(args.session_name + '.log')
 
     print(vars(args))
@@ -40,7 +47,7 @@ if __name__ == '__main__':
     model = getattr(importlib.import_module(args.network), 'Net')()
 
     print(model)
-
+    wandb.watch(model)
     train_dataset = data.VOC12AffDataset(args.train_list, label_la_dir=args.la_crf_dir,
                                          label_ha_dir=args.ha_crf_dir,
                                          voc12_root=args.voc12_root, cropsize=args.crop_size, radius=5,
@@ -145,6 +152,17 @@ if __name__ == '__main__':
                       'imps:%.1f' % ((iter + 1) * args.batch_size / timer.get_stage_elapsed()),
                       'Fin:%s' % (timer.str_est_finish()),
                       'lr: %.4f' % (optimizer.param_groups[0]['lr']), flush=True)
+
+                wandb.log({
+                    'iter': (optimizer.global_step - 1, max_step),
+                    'loss': avg_meter.get('loss', 'bg_loss', 'fg_loss', 'neg_loss'),
+                    'bg_cnt': avg_meter.get('bg_cnt'),
+                    'fg_cnt': avg_meter.get('fg_cnt'),
+                    'neg_cnt': avg_meter.get('neg_cnt'),
+                    'imps': ((iter + 1) * args.batch_size / timer.get_stage_elapsed()),
+                    'fin': (timer.str_est_finish()),
+                    'lr': (optimizer.param_groups[0]['lr'])
+                })
 
                 avg_meter.pop()
 
