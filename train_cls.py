@@ -1,3 +1,4 @@
+import os
 
 import numpy as np
 import torch
@@ -142,5 +143,5 @@ if __name__ == '__main__':
         else:
             validate(model, val_data_loader)
             timer.reset_stage()
-
+    os.makedirs(os.path.dirname(args.session_name), exist_ok=True)
     torch.save(model.module.state_dict(), args.session_name + '.pth')
